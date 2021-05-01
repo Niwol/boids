@@ -12,15 +12,8 @@ public:
 
   void initialize();
 
-  Ra::Core::Animation::KeyFramedValue<Ra::Core::Transform> getTransform();
+  Ra::Core::Transform getTransform();
 
 private:
-  Ra::Core::Animation::KeyFramedValue<Ra::Core::Transform> m_transform;
-
-  template <typename T>
-  using ReadWrite =
-      typename Ra::Engine::Scene::ComponentMessenger::CallbackTypes<
-          T>::ReadWrite;
-
-  ReadWrite<Ra::Core::Geometry::TriangleMesh> m_triMeshReader;
+  Ra::Core::Transform m_transform;
 };
