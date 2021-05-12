@@ -21,9 +21,10 @@ void MainApplication::setup() {
   auto e = m_engine->getEntityManager()->createEntity("boid");
   auto cTriMesh = new Ra::Engine::Scene::TriangleMeshComponent(
       "mesh comp", e, std::move(mesh), nullptr);
-  auto cKeyFrame = new KeyFrameComponent("key Frame", e);
+  auto cKeyFrame = new TransformComponent("key Frame", e);
 
   auto geometrySystem = m_engine->getSystem("GeometrySystem");
+
   geometrySystem->addComponent(e, cTriMesh);
 
   m_engine->registerSystem("BoidSystem", new BoidSystem);

@@ -3,7 +3,8 @@
 #include <iostream>
 #include <vector>
 
-#include "keyFrameComponent.hpp"
+#include "transformComponent.hpp"
+#include <Engine/FrameInfo.hpp>
 #include <Engine/RadiumEngine.hpp>
 #include <Engine/Scene/ComponentMessenger.hpp>
 #include <Engine/Scene/GeometryComponent.hpp>
