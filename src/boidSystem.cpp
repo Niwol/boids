@@ -19,7 +19,8 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
       auto physics = comp->getPhysics();
 
       Ra::Core::Transform t;
-      t = Ra::Core::AngleAxis(frameInfo.m_dt, physics.prevRotationAxis);
+      t = Ra::Core::AngleAxis(frameInfo.m_dt * physics.rataionSpeed,
+                              physics.prevRotationAxis);
 
       // Updating verts
       auto &verts = mesh->verticesWithLock();

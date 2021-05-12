@@ -8,8 +8,8 @@ TransformComponent::TransformComponent(const std::string &name,
   m_physics.rotationAxis = Ra::Core::Vector3(0.f, 1.f, 0.f);
   m_physics.prevRotationAxis = Ra::Core::Vector3(0.f, 1.f, 0.f);
 
-  m_physics.rataionSpeed = 1.f;
-  m_physics.prevRotationSpeed = 1.f;
+  m_physics.rataionSpeed = 0.f;
+  m_physics.prevRotationSpeed = 0.f;
 }
 
 void TransformComponent::initialize() {}
