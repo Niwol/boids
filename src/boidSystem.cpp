@@ -16,24 +16,21 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
 
       auto mesh = f1();
 
-      auto pos = comp->getPosition();
-      auto dir = comp->getDirection();
-      auto preDir = comp->getPreDirection();
+      auto physics = comp->getPhysics();
 
       Ra::Core::Transform t;
-      t = Ra::Core::AngleAxis(frameInfo.m_dt, dir);
+      t = Ra::Core::AngleAxis(frameInfo.m_dt, physics.prevRotationAxis);
 
       // Updating verts
       auto &verts = mesh->verticesWithLock();
 
       for (auto &v : verts) {
-        v -= pos;
+        v -= physics.position;
         v = t * v;
-        v += pos;
+        v += physics.position;
       }
 
       mesh->verticesUnlock();
-
 
       // t = Ra::Core::AngleAxis(2.f * frameInfo.m_dt, preDir);
       // dir = t * dir;
@@ -42,11 +39,12 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
       //                         Ra::Core::Vector3::Random());
       // preDir = t * preDir;
 
-      std::cout << "dir = " << dir.transpose()
-                << "  ;  preDir = " << preDir.transpose() << std::endl;
+      std::cout << "axis = " << physics.rotationAxis.transpose()
+                << "  ;  prevAxis = " << physics.prevRotationAxis.transpose()
+                << std::endl;
 
-      dir.transpose();
-      preDir.transpose();
+      physics.rotationAxis.transpose();
+      physics.prevRotationAxis.transpose();
 
       // trans.rotate(Ra::Core::AngleAxis(Ra::Core::Math::PiDiv3,
       //                                  Ra::Core::Vector3::UnitY()));

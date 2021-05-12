@@ -9,6 +9,12 @@
 
 struct PhysicInfo {
   Ra::Core::Vector3 position;
+
+  Ra::Core::Vector3 rotationAxis;
+  Ra::Core::Vector3 prevRotationAxis;
+
+  float rataionSpeed;
+  float prevRotationSpeed;
 };
 
 class TransformComponent : public Ra::Engine::Scene::Component {
@@ -18,12 +24,8 @@ public:
 
   void initialize();
 
-  Ra::Core::Vector3 &getPosition();
-  Ra::Core::Vector3 &getDirection();
-  Ra::Core::Vector3 &getPreDirection();
+  PhysicInfo &getPhysics();
 
 private:
-  Ra::Core::Vector3 m_position;
-  Ra::Core::Vector3 m_direction;
-  Ra::Core::Vector3 m_preDirection;
+  PhysicInfo m_physics;
 };
