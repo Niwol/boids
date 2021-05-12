@@ -9,12 +9,11 @@
 
 struct PhysicInfo {
   Ra::Core::Vector3 position;
-
   Ra::Core::Vector3 rotationAxis;
-  Ra::Core::Vector3 prevRotationAxis;
+  Ra::Core::Vector3 direction;
 
-  float rataionSpeed;
-  float prevRotationSpeed;
+  float speed;
+  float rotationSpeed;
 };
 
 class TransformComponent : public Ra::Engine::Scene::Component {

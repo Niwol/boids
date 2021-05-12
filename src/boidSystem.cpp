@@ -16,11 +16,11 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
 
       auto mesh = f1();
 
-      auto physics = comp->getPhysics();
+      auto &physics = comp->getPhysics();
 
       Ra::Core::Transform t;
-      t = Ra::Core::AngleAxis(frameInfo.m_dt * physics.rataionSpeed,
-                              physics.prevRotationAxis);
+      t = Ra::Core::AngleAxis(frameInfo.m_dt * physics.rotationSpeed,
+                              physics.rotationAxis);
 
       // Updating verts
       auto &verts = mesh->verticesWithLock();
@@ -29,7 +29,13 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
         v -= physics.position;
         v = t * v;
         v += physics.position;
+
+        v += physics.direction * physics.speed;
       }
+
+      physics.position += physics.direction * physics.speed;
+
+      physics.direction = t * physics.direction;
 
       mesh->verticesUnlock();
 
@@ -41,11 +47,13 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
       // preDir = t * preDir;
 
       std::cout << "axis = " << physics.rotationAxis.transpose()
-                << "  ;  prevAxis = " << physics.prevRotationAxis.transpose()
-                << std::endl;
+                << "  ;  rotSpeed = " << physics.rotationSpeed << std::endl;
 
       physics.rotationAxis.transpose();
-      physics.prevRotationAxis.transpose();
+
+      physics.rotationSpeed += (float(rand()) / RAND_MAX - 0.5);
+      physics.rotationAxis += Ra::Core::Vector3::Random() * 0.5;
+      physics.rotationAxis.normalize();
 
       // trans.rotate(Ra::Core::AngleAxis(Ra::Core::Math::PiDiv3,
       //                                  Ra::Core::Vector3::UnitY()));
