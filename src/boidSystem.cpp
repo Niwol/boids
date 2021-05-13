@@ -11,10 +11,10 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
 
       auto comp = static_cast<TransformComponent *>(pair.second);
 
-      auto f1 = cm->rwCallback<Ra::Core::Geometry::TriangleMesh>(pair.first,
-                                                                 "mesh comp");
+      auto triMeshGetter = cm->rwCallback<Ra::Core::Geometry::TriangleMesh>(
+          pair.first, "mesh comp");
 
-      auto mesh = f1();
+      auto mesh = triMeshGetter();
 
       auto &physics = comp->getPhysics();
 
@@ -24,7 +24,6 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
 
       // Updating verts
       auto &verts = mesh->verticesWithLock();
-
       for (auto &v : verts) {
         v -= physics.position;
         v = t * v;
@@ -32,22 +31,11 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
 
         v += physics.direction * physics.speed;
       }
+      mesh->verticesUnlock();
 
       physics.position += physics.direction * physics.speed;
 
       physics.direction = t * physics.direction;
-
-      mesh->verticesUnlock();
-
-      // t = Ra::Core::AngleAxis(2.f * frameInfo.m_dt, preDir);
-      // dir = t * dir;
-
-      // t = Ra::Core::AngleAxis(5.f * frameInfo.m_dt,
-      //                         Ra::Core::Vector3::Random());
-      // preDir = t * preDir;
-
-      std::cout << "axis = " << physics.rotationAxis.transpose()
-                << "  ;  rotSpeed = " << physics.rotationSpeed << std::endl;
 
       physics.rotationAxis.transpose();
 
@@ -55,8 +43,40 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
       physics.rotationAxis += Ra::Core::Vector3::Random() * 0.5;
       physics.rotationAxis.normalize();
 
-      // trans.rotate(Ra::Core::AngleAxis(Ra::Core::Math::PiDiv3,
-      //                                  Ra::Core::Vector3::UnitY()));
+      // Boid interaction
+      for (auto &otherPair : m_components) {
+        auto otherComp = static_cast<TransformComponent *>(otherPair.second);
+
+        PhysicInfo otherPhysics = otherComp->getPhysics();
+
+        if (otherPhysics.position != physics.position) {
+
+          auto diffVector = otherPhysics.position - physics.position;
+          float dist = diffVector.norm();
+
+          if (dist < 0.5f) {
+            physics.rotationAxis += diffVector.cross(physics.direction);
+            physics.rotationAxis.normalize();
+
+            physics.rotationSpeed += 0.01;
+
+          } else if (dist < 2.f) {
+            physics.rotationAxis += diffVector.cross(physics.direction);
+            physics.rotationAxis.normalize();
+
+            physics.rotationSpeed -= 0.01;
+          }
+        }
+      }
+
+      // Rotation speed check
+      const float rotationSpeedLimit = 1.5f;
+
+      if (physics.rotationSpeed > rotationSpeedLimit)
+        physics.rotationSpeed = rotationSpeedLimit;
+
+      if (physics.rotationSpeed < -rotationSpeedLimit)
+        physics.rotationSpeed = -rotationSpeedLimit;
     }
   }
 }
