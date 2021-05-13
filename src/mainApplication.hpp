@@ -18,4 +18,5 @@ public:
   void setup();
 
 private:
+  int m_nbBoids;
 };
