@@ -39,7 +39,7 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
 
       physics.rotationAxis.transpose();
 
-      physics.rotationSpeed += (float(rand()) / RAND_MAX - 0.5) * 0.5;
+      physics.rotationSpeed += (float(rand()) / RAND_MAX - 0.5);
       physics.rotationAxis += Ra::Core::Vector3::Random() * 0.5;
       physics.rotationAxis.normalize();
 
@@ -54,16 +54,13 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
           auto diffVector = otherPhysics.position - physics.position;
           float dist = diffVector.norm();
 
-          if (dist < 1.f) {
+          if (dist < 0.5f) {
             physics.rotationAxis += diffVector.cross(physics.direction);
             physics.rotationAxis.normalize();
 
             physics.rotationSpeed += 0.01;
 
           } else if (dist < 2.f) {
-            physics.rotationAxis += otherPhysics.rotationAxis;
-            physics.rotationAxis.normalize();
-          } else if (dist < 50.f) {
             physics.rotationAxis += diffVector.cross(physics.direction);
             physics.rotationAxis.normalize();
 
@@ -73,7 +70,7 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
       }
 
       // Rotation speed check
-      const float rotationSpeedLimit = .5f;
+      const float rotationSpeedLimit = 1.5f;
 
       if (physics.rotationSpeed > rotationSpeedLimit)
         physics.rotationSpeed = rotationSpeedLimit;
