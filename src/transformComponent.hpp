@@ -8,23 +8,22 @@
 #include <Engine/Scene/Entity.hpp>
 
 struct PhysicInfo {
-  Ra::Core::Vector3 position;
-  Ra::Core::Vector3 rotationAxis;
-  Ra::Core::Vector3 direction;
+    Ra::Core::Vector3 position;
+    Ra::Core::Vector3 rotationAxis;
+    Ra::Core::Vector3 direction;
 
-  float speed;
-  float rotationSpeed;
+    float speed;
+    float rotationSpeed;
 };
 
 class TransformComponent : public Ra::Engine::Scene::Component {
 public:
-  TransformComponent(const std::string &name,
-                     Ra::Engine::Scene::Entity *entity);
+    TransformComponent(const std::string &name, Ra::Engine::Scene::Entity *entity);
 
-  void initialize();
+    void initialize();
 
-  PhysicInfo &getPhysics();
+    PhysicInfo &getPhysics();
 
 private:
-  PhysicInfo m_physics;
+    PhysicInfo m_physics;
 };

@@ -8,6 +8,7 @@
 #include <Gui/BaseApplication.hpp>
 
 #include "boidSystem.hpp"
+#include "ColisionComponent.hpp"
 
 class MainApplication : public Ra::Gui::BaseApplication {
 public:

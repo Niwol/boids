@@ -23,8 +23,8 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
                                     physics.rotationAxis);
 
             Ra::Core::Vector3f newPhysicsPosition = physics.position + physics.direction * physics.speed;
-            //newPhysicsPosition = verifyCubeBorders(newPhysicsPosition, MAP_BORDER);
-            newPhysicsPosition = verifyBorders(newPhysicsPosition, MAP_BORDER, 0.f, MAP_BORDER,0.f, MAP_BORDER, 0.f);
+            newPhysicsPosition = verifyCubeBorders(newPhysicsPosition, MAP_BORDER);
+            //newPhysicsPosition = verifyBorders(newPhysicsPosition, MAP_BORDER, 0.f, MAP_BORDER,0.f, MAP_BORDER, 0.f);
 
             // Updating verts
             auto &verts = mesh->verticesWithLock();
@@ -32,18 +32,32 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
                 v -= physics.position;
                 v = t * v;
                 v += newPhysicsPosition;
+                //v += newPhysics.position;
             }
             mesh->verticesUnlock();
 
             physics.position = newPhysicsPosition;
-
             physics.direction = t * physics.direction;
 
+            // Deplacement plus aleatoire d'un boid sur 9
+            int randomInt = rand() % 100;
+            if (randomInt % 9 == 0) {
+                physics.rotationSpeed += float(rand() % 500 / 1000);
+                physics.rotationAxis += Ra::Core::Vector3::Random();
+            }
+            // fin de deplacement plus aleatoire d'un boid sur 9
+
+            physics.rotationAxis.normalize();
             physics.rotationAxis.transpose();
 
-            physics.rotationSpeed += (float(rand()) / RAND_MAX - 0.5);
-            physics.rotationAxis += Ra::Core::Vector3::Random() * 0.5;
-            physics.rotationAxis.normalize();
+            // Declaration de compteurs de voisins pris en compte pour les regles de cohesion et de separation
+            int nbReallyCloseNeighbours = 0;
+            int nbCloseNeighbours = 0;
+
+            // Declaration d'accumulateur des angles pris en compte pour le calcul de la rotation du boid :
+            // TODO : il serait plus juste de calculer avec un accumulateur pour les valeurs negatives
+            //        et un pour les valeurs positives et faire la moyenne pour chacune des valeurs avant de les sommer
+            double angleAvg = 0.0;
 
             // Boid interaction
             for (auto &otherPair : m_components) {
@@ -54,22 +68,109 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
                 if (otherPhysics.position != physics.position) {
 
                     auto diffVector = otherPhysics.position - physics.position;
+                    Ra::Core::Vector3f diffVectorNormalised = diffVector;
+                    diffVectorNormalised.normalize();
                     float dist = diffVector.norm();
 
-                    if (dist < 3.f) {
+                    /* Separation : le boid s'eloigne de ses voisins tres proches */
+                    if (dist < 1.f) {
                         physics.rotationAxis += diffVector.cross(physics.direction);
                         physics.rotationAxis.normalize();
 
-                        physics.rotationSpeed += 0.01;
+                        // calcul de l'angle entre le boid et le boid voisin
+                        // (prise en compte du signe du cos pour orienter a gauche ou a droite la rotation)
+                        auto cos = physics.direction.dot(diffVectorNormalised) / (physics.direction.norm() * diffVectorNormalised.norm());
+                        if (cos >= 0)
+                            angleAvg -= acos(cos) * 2.f * M_PI / 360.f;
+                        else
+                            angleAvg -= -(acos(cos) * 2.f * M_PI / 360.f);
 
-                    } else if (dist < 6.f) {
+                        // ralentissement du boid trop proche de son voisin
+                        if (physics.speed > 0.05f) {
+                            physics.speed -= 0.005f;
+                        }
+
+                        nbReallyCloseNeighbours ++;
+                    }
+                    /* Cohesion : le boid se rapproche de ses voisins */
+                    else if (dist < 6.f) {
+                        // regle alignement ?
+                        //physics.rotationAxis += otherPhysics.rotationAxis;
+                        //physics.rotationAxis.normalize();
+
                         physics.rotationAxis += diffVector.cross(physics.direction);
                         physics.rotationAxis.normalize();
 
-                        physics.rotationSpeed -= 0.01;
+                        // calcul de l'angle entre le boid et le boid voisin
+                        // (prise en compte du signe du cos pour orienter a gauche ou a droite la rotation)
+                        auto cos = physics.direction.dot(diffVectorNormalised) / (physics.direction.norm() * diffVectorNormalised.norm());
+                        if (cos >= 0)
+                            angleAvg += acos(cos) * 2.f * M_PI / 360.f;
+                        else
+                            angleAvg += -(acos(cos) * 2.f * M_PI / 360.f);
+
+                        // acceleration du boid pour se rapprocher de ses voisins
+                        if (physics.speed < 0.1f) {
+                            physics.speed += 0.005f;
+                        }
+                        nbCloseNeighbours ++;
                     }
                 }
             }
+
+            // affichage des infos pour le boid rouge
+            //if (pair.first->getName() == "boid0") {
+            //    std::cout << angleAvg << std::endl;
+            //}
+
+            // calcul de la moyenne des angles entre la direction du boid et les vecteurs distance boid-voisin
+            angleAvg = angleAvg / (float) (nbCloseNeighbours + nbReallyCloseNeighbours);
+
+            // rotation du boid prenant en compte la moyenne des angles pour orienter le boid
+            // vers ses voisins sans les percuter et sans depasser un certain angle
+            if (physics.rotationSpeed + (float) angleAvg < 1.5f && physics.rotationSpeed + (float) angleAvg > -1.5f)
+                physics.rotationSpeed += (float) angleAvg;
+            else if (physics.rotationSpeed + (float) angleAvg >= 1.5f)
+                physics.rotationSpeed = 1.5f;
+            else
+                physics.rotationSpeed = -1.5f;
+
+            // affichage des infos pour le boid rouge
+            //if (pair.first->getName() == "boid0") {
+            //    std::cout << physics.rotationSpeed << std::endl;
+            //}
+
+
+            // Avoid obstacles
+            /*auto collisionAvoidDirection = Ra::Core::Vector3f (0.f, 0.f, 0.f);
+            for (auto obstacle : obstacles) {
+                auto diffVector = obstacle.getPosition() - physics.position;
+                float dist = diffVector.norm();
+
+                if (dist < obstacle.radius + 0.5f) {
+                    collisionAvoidDirection += diffVector;
+                }*/
+                /*else {
+                    collisionAvoidDirection -= diffVector;
+                }*/
+
+                /*if (dist < obstacle.radius + 10.f) {
+                    //physics.rotationAxis += diffVector.cross(physics.direction);
+                    physics.rotationAxis += obstacle.getPosition() - physics.position;
+                    physics.rotationAxis.normalize();
+                    //physics.direction -= diffVector.cross(physics.direction);
+                    //physics.direction += obstacle.getPosition() - physics.position;
+
+                    physics.direction.normalize();
+
+                    physics.rotationSpeed += 0.05;
+                }*/
+            /*}
+            physics.rotationAxis += collisionAvoidDirection.cross(physics.direction) * 5;
+            physics.rotationAxis.normalize();*/
+
+            //physics.rotationSpeed += 1.f;
+
 
             // Rotation speed check
             const float rotationSpeedLimit = 1.5f;
@@ -118,4 +219,7 @@ Ra::Core::Vector3f BoidSystem::verifyBorders(Ra::Core::Vector3f position,
         position = Ra::Core::Vector3f(position.x(), position.y(), toBottomLength);
 
     return position;
+}
+void BoidSystem::addToObstacles(ColisionComponent obstacle) {
+    obstacles.push_back(obstacle);
 }
