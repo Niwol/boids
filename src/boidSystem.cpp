@@ -86,11 +86,11 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
                         // (prise en compte du signe du cos pour orienter a gauche ou a droite la rotation)
                         auto cos = physics.direction.dot(diffVectorNormalised) / (physics.direction.norm() * diffVectorNormalised.norm());
                         if (cos >= 0) {
-                          angleAvgNeg -= 5.f * 2.f * M_PI / 360.f;
+                          angleAvgNeg -= 3.f * 2.f * M_PI / 360.f;
                           nbNeighbourgsRight ++;
                         }
                         else {
-                          angleAvgPos -= -(5.f * 2.f * M_PI / 360.f);
+                          angleAvgPos -= -(3.f * 2.f * M_PI / 360.f);
                           nbNeighboursLeft ++;
                         }
 
