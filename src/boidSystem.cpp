@@ -54,10 +54,15 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
             int nbReallyCloseNeighbours = 0;
             int nbCloseNeighbours = 0;
 
+            int nbNeighboursLeft = 0;
+            int nbNeighbourgsRight = 0;
+
             // Declaration d'accumulateur des angles pris en compte pour le calcul de la rotation du boid :
             // TODO : il serait plus juste de calculer avec un accumulateur pour les valeurs negatives
             //        et un pour les valeurs positives et faire la moyenne pour chacune des valeurs avant de les sommer
             double angleAvg = 0.0;
+            double angleAvgPos = 0.0;
+            double angleAvgNeg = 0.0;
 
             // Boid interaction
             for (auto &otherPair : m_components) {
@@ -80,20 +85,24 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
                         // calcul de l'angle entre le boid et le boid voisin
                         // (prise en compte du signe du cos pour orienter a gauche ou a droite la rotation)
                         auto cos = physics.direction.dot(diffVectorNormalised) / (physics.direction.norm() * diffVectorNormalised.norm());
-                        if (cos >= 0)
-                            angleAvg -= acos(cos) * 2.f * M_PI / 360.f;
-                        else
-                            angleAvg -= -(acos(cos) * 2.f * M_PI / 360.f);
+                        if (cos >= 0) {
+                          angleAvgNeg -= 5.f * 2.f * M_PI / 360.f;
+                          nbNeighbourgsRight ++;
+                        }
+                        else {
+                          angleAvgPos -= -(5.f * 2.f * M_PI / 360.f);
+                          nbNeighboursLeft ++;
+                        }
 
                         // ralentissement du boid trop proche de son voisin
-                        if (physics.speed > 0.05f) {
+                        /*if (physics.speed > 0.05f) {
                             physics.speed -= 0.005f;
-                        }
+                        }*/
 
                         nbReallyCloseNeighbours ++;
                     }
                     /* Cohesion : le boid se rapproche de ses voisins */
-                    else if (dist < 6.f) {
+                    else if (dist < 7.f) {
                         // regle alignement ?
                         //physics.rotationAxis += otherPhysics.rotationAxis;
                         //physics.rotationAxis.normalize();
@@ -104,37 +113,56 @@ void BoidSystem::generateTasks(Ra::Core::TaskQueue *taskQueue,
                         // calcul de l'angle entre le boid et le boid voisin
                         // (prise en compte du signe du cos pour orienter a gauche ou a droite la rotation)
                         auto cos = physics.direction.dot(diffVectorNormalised) / (physics.direction.norm() * diffVectorNormalised.norm());
-                        if (cos >= 0)
-                            angleAvg += acos(cos) * 2.f * M_PI / 360.f;
-                        else
-                            angleAvg += -(acos(cos) * 2.f * M_PI / 360.f);
+                        if (cos >= 0) {
+                          angleAvgPos += acos(cos) * 2.f * M_PI / 360.f;
+                          nbNeighbourgsRight ++;
+                        }
+                        else {
+                          angleAvgNeg += -(acos(cos) * 2.f * M_PI / 360.f);
+                          nbNeighboursLeft ++;
+                        }
 
                         // acceleration du boid pour se rapprocher de ses voisins
-                        if (physics.speed < 0.1f) {
+                        /*if (physics.speed < 0.1f) {
                             physics.speed += 0.005f;
-                        }
+                        }*/
                         nbCloseNeighbours ++;
                     }
                 }
             }
 
-            // affichage des infos pour le boid rouge
-            //if (pair.first->getName() == "boid0") {
-            //    std::cout << angleAvg << std::endl;
-            //}
+            if (nbCloseNeighbours > 0) {
+              // ralentissement du boid trop proche de son voisin
+              if (physics.speed > 0.10f) {
+                  physics.speed -= 0.005f;
+              }
+            }
 
-            // calcul de la moyenne des angles entre la direction du boid et les vecteurs distance boid-voisin
-            angleAvg = angleAvg / (float) (nbCloseNeighbours + nbReallyCloseNeighbours);
+            if (nbReallyCloseNeighbours == 0) {
+              // acceleration du boid pour se rapprocher de ses voisins
+              if (physics.speed < 0.14f) {
+                  physics.speed += 0.005f;
+              }
+            }
 
-            // rotation du boid prenant en compte la moyenne des angles pour orienter le boid
-            // vers ses voisins sans les percuter et sans depasser un certain angle
-            if (physics.rotationSpeed + (float) angleAvg < 1.5f && physics.rotationSpeed + (float) angleAvg > -1.5f)
-                physics.rotationSpeed += (float) angleAvg;
-            else if (physics.rotationSpeed + (float) angleAvg >= 1.5f)
+              // affichage des infos pour le boid rouge
+              // if (pair.first->getName() == "boid0") {
+              //    std::cout << angleAvg << std::endl;
+              //}
+
+              // calcul de la moyenne des angles entre la direction du boid et les vecteurs distance boid-voisin
+              // angleAvg = angleAvg / (float) (nbCloseNeighbours + nbReallyCloseNeighbours);
+              angleAvg = angleAvgNeg / ((float)nbNeighboursLeft) +
+                         angleAvgPos / ((float)nbNeighbourgsRight);
+
+              // rotation du boid prenant en compte la moyenne des angles pour orienter le boid vers ses voisins sans les percuter et sans depasser un certain angle
+              if (physics.rotationSpeed + (float)angleAvg < 1.5f &&
+                  physics.rotationSpeed + (float)angleAvg > -1.5f)
+                physics.rotationSpeed += (float)angleAvg;
+              else if (physics.rotationSpeed + (float)angleAvg >= 1.5f)
                 physics.rotationSpeed = 1.5f;
-            else
+              else
                 physics.rotationSpeed = -1.5f;
-
             // affichage des infos pour le boid rouge
             //if (pair.first->getName() == "boid0") {
             //    std::cout << physics.rotationSpeed << std::endl;
